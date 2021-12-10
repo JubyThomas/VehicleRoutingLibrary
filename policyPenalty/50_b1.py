@@ -25,6 +25,9 @@ dictSort={}
 drop_nodes = []
 mandatoryNodes=[]
 mandatoryNodesById=[]
+binSize=50 # we assume the bin size is 50 L for all our experiment
+bin_fill_level=0.70
+drop_nodes_greater_than70=[]
 # [START data_model]
 
 
@@ -329,20 +332,11 @@ def create_data_model():
             drop_nodes.append(key)
             removedOtherNodes.append(key)
         else:
-            mandatoryNodesById.append(key) 
-
-    #need to drop Id =0 which is the depot since itcan notbe included in AddDisjunction method
-    mandatoryNodesById.remove(0)
-
-
-    print("Node id Which must be dropped",removedOtherNodes)                
-    print("Mandatory Nodes By Id",mandatoryNodesById)
-    print("Dropped Nodes", drop_nodes)
-  
+            mandatoryNodesById.append(key)    
 
     for x in removedOtherNodes:
-        dictSort.pop(x)        
-    
+        dictSort.pop(x)    
+        
     print(dictSort)
     return data
     # [END data_model]
@@ -352,14 +346,17 @@ def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
     print(f'Objective: {assignment.ObjectiveValue()}')
     # Display dropped nodes.
-    """ dropped_nodes = 'Dropped nodes:'
+    dropped_nodes = []
     for node in range(routing.Size()):
         if routing.IsStart(node) or routing.IsEnd(node):
             continue
         if assignment.Value(routing.NextVar(node)) == node:
-            dropped_nodes += ' {}'.format(manager.IndexToNode(node))
-            drop_nodes.append(manager.IndexToNode(node))
-    print(dropped_nodes)"""
+            dropped_nodes.append(manager.IndexToNode(node))
+
+    for x in dropped_nodes:
+        if x in mandatoryNodesById:
+            mandatoryNodesById.remove(x)
+            drop_nodes.append(x) 
 
     # Display routes
     total_distance = 0
@@ -386,6 +383,25 @@ def print_solution(data, manager, routing, assignment):
         total_load += route_load
     print('Total Distance of all routes: {}m'.format(total_distance))
     print('Total Load of all routes: {}'.format(total_load))
+    print("*****************Result of Number of Nodes with Fill level >70% ****************************************")
+    node_greaterthan_70=[]
+    print("Total Number Of Demands:",len(data['demands']))               
+    for val in range(0,len(data['demands'])):
+        if(data['demands'][val] >= binSize*0.70 ):
+            node_greaterthan_70.append(val)
+            
+    
+    for val in dropped_nodes:
+        if (val in node_greaterthan_70 ):
+            drop_nodes_greater_than70.append(val)
+   
+    print("Node id Which must be dropped",sorted(drop_nodes))                
+    print("Mandatory Nodes By Id",mandatoryNodesById)
+    print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 
+    print("Total Number of Nodes With Fill level>70% :",len(node_greaterthan_70))
+    print("Total Number of Dropped Nodes With Fill level>70% :",len(drop_nodes_greater_than70))
+    print("Total Number of  Visited Nodes Nodes With Fill level>70% :",len(node_greaterthan_70)- len(drop_nodes_greater_than70))
+    print("***********************************************************")
 
 def main():
     """Solve the CVRP problem."""
