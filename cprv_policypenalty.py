@@ -49,18 +49,6 @@ def CreateDemandDictionarySorted(demandList):
     print(dictSort)
     return dictSort
 
-"""This method creates Distance Matrix for all the co-ordinates , euclidean distance are calculated between two points
-def createDistanceMatrix(noOfcities):
-    data['distance_matrix']=np.zeros((noOfcities+1,noOfcities+1)) 
-    for i in  range (0,noOfcities+1):
-        for j in range(0,noOfcities+1):
-            if (i==0 and j==0):
-                data['distance_matrix'][i][j]=0
-            else:
-                data['distance_matrix'][i][j]=np.round(math.dist(coords[i],coords[j]),2)  
-    print(data['distance_matrix'])
-    #return data['distance_matrix']"""
-
 #Creating Array which contains details of mandatory nodes to be picked up
 def createMandatoryVisitLocationList(demandList):
     y= sorted(demandList,reverse=True)
@@ -113,7 +101,7 @@ def create_data_model():
     print(data['demands'])
     CreateDemandDictionarySorted(x)
 
-    """Call Function To Create Distance Matrix"""
+    """Call Function To Create Distance Matrix- creates Distance Matrix for all the co-ordinates , euclidean distance are calculated between two points"""
     data['distance_matrix']=np.zeros((noOfcities+1,noOfcities+1)) 
     for i in  range (0,noOfcities+1):
         for j in range(0,noOfcities+1):

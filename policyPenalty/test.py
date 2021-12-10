@@ -15,19 +15,20 @@
 """Capacited Vehicles Routing Problem (CVRP)."""
 
 # [START import]
-
-from numpy.lib.function_base import diff
 from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import random
 import numpy as np
+# [END import]
+
+dictSort={}
+drop_nodes = []
+mandatoryNodes=[]
+mandatoryNodesById=[]
 drop_nodes = []
 binSize=50 # we assume the bin size is 50 L for all our experiment
 bin_fill_level=0.70
 drop_nodes_greater_than70=[]
-# [END import]
-
-
 # [START data_model]
 
 
@@ -79,6 +80,53 @@ def create_data_model():
 
     data['depot'] = 0
 
+    dictSort={}
+
+    for val in range(len(data['demands'])):
+        dictSort[val]=data['demands'][val]
+ 
+    print(dictSort)
+
+    #Creating Array which contains details of mandatory nodes to be picked up
+    y= sorted(data["demands"],reverse=True)
+    #print(y)
+
+    temp=0
+    if(sum(y)>sum(data['vehicle_capacities'])):
+     for testy in y:
+        temp=sum(mandatoryNodes)+testy
+        if(temp<=sum(data['vehicle_capacities'])):
+           mandatoryNodes.append(testy)
+
+    print("Mandatory Nodes To Be Picked")
+    print(mandatoryNodes)
+    
+
+ 
+
+    # To remove dropped nodes from dictionary
+    removedOtherNodes=[]
+
+    for key,value in dictSort.items():
+        if value not in mandatoryNodes:
+            drop_nodes.append(key)
+            removedOtherNodes.append(key)
+        else:
+            mandatoryNodesById.append(key) 
+
+    #need to drop Id =0 which is the depot since itcan notbe included in AddDisjunction method
+    #mandatoryNodesById.remove(0)
+
+
+    print("Node id Which must be dropped",removedOtherNodes)                
+    print("Mandatory Nodes By Id",mandatoryNodesById)
+    print("Dropped Nodes", drop_nodes)
+  
+
+    for x in removedOtherNodes:
+        dictSort.pop(x)        
+    
+    print(dictSort)
     return data
     # [END data_model]
 
@@ -86,15 +134,7 @@ def create_data_model():
 def print_solution(data, manager, routing, assignment):
     """Prints assignment on console."""
     print(f'Objective: {assignment.ObjectiveValue()}')
-    # Display dropped nodes.
-    dropped_nodes = 'Dropped nodes:'
-    for node in range(routing.Size()):
-        if routing.IsStart(node) or routing.IsEnd(node):
-            continue
-        if assignment.Value(routing.NextVar(node)) == node:
-            dropped_nodes += ' {}'.format(manager.IndexToNode(node))            
-            drop_nodes.append(manager.IndexToNode(node))
-    print(dropped_nodes)
+   
     # Display routes
     total_distance = 0
     total_load = 0
@@ -186,13 +226,14 @@ def main():
     # Allow to drop nodes.
      
     #Adding Penalty To Mandatory Nodes That Need To Be Picked Up
-    """
-    penalty = 10000
-    routing.AddDisjunction([manager.NodeToIndex(i) for i in [1,6,13]], penalty,4)"""
-
     penalty = 10000
     for node in range(1, len(data['distance_matrix'])):
-        routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+        
+        if(manager.NodeToIndex(node) in mandatoryNodesById):
+            routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+        else:
+            routing.AddDisjunction([manager.NodeToIndex(node)], 0)
+
  
 
     # Setting first solution heuristic.

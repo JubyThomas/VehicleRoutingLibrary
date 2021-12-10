@@ -19,6 +19,10 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import random
 import numpy as np
+drop_nodes = []
+binSize=50 # we assume the bin size is 50 L for all our experiment
+bin_fill_level=0.70
+drop_nodes_greater_than70=[]
 # [END import]
 
 # [START data_model]
@@ -89,7 +93,7 @@ def create_data_model():
                     341.72,  61.19, 108.   , 63.63 ,315.43, 508.79, 324.14, 287.7  , 56.14, 347.97],
                     [217.75, 282.84, 293.07 ,269.26 ,187.95, 326.92, 251.03, 159.53 ,126.48, 296.34,
                     433.04, 267.24,  14.21 ,102.62 ,140.93, 390.57, 296.62, 299.66 ,345.62,   0.,
-                    376.54, 310.04, 270.2 , 360.77, 32.57, 176.5 , 323.24 ,171.66 ,301.23 ,359.49,]
+                    376.54, 310.04, 270.2 , 360.77, 32.57, 176.5 , 323.24 ,171.66 ,301.23 ,359.49],
                     [538.64, 241.21,  83.49, 183.25 ,458.26, 138. ,  133.36, 407.64, 250.06, 159.86,
                     290.08, 150.95, 366.72, 456.92 ,298.8 ,  70.41,  94.54, 227.79, 341.72, 376.54,
                         0.  , 283.49, 250.98, 289.91 ,370.74, 432.92 , 54.15, 204.88 ,295.39 , 24.84],
@@ -98,7 +102,7 @@ def create_data_model():
                     283.49,   0.  ,  49.48,  51.31, 282.21, 464.35 ,263.58, 231.39,  16.49 ,288.46],
                     [335.72, 361.4 , 200.55,  69.35, 245.28, 315.3 , 221.65, 394.08, 194.59, 307.88,
                     162.86, 271.35 ,269.9 , 372.8 , 130.51, 213.21, 242.62,  37.05, 108. ,  270.2,
-                    250.98,  49.48 ,  0.  ,  93.81, 244.44, 418.4 , 224.54, 181.91,  52.15, 252.67,]
+                    250.98,  49.48 ,  0.  ,  93.81, 244.44, 418.4 , 224.54, 181.91,  52.15, 252.67],
                     [393.72, 442.89, 262.76, 138.76, 303.32, 382.58 ,297.32, 487.89, 287.78, 381.22,
                     80.05, 347.13, 361.49, 463.26, 219.86, 233.44, 308.42,  80.05,  63.63, 360.77,
                     289.91,  51.31,  93.81 ,  0.  , 333.29, 512.2 , 279.33, 271.49,  63.69, 299.04],
@@ -145,7 +149,8 @@ def print_solution(data, manager, routing, assignment):
             continue
         if assignment.Value(routing.NextVar(node)) == node:
             dropped_nodes += ' {}'.format(manager.IndexToNode(node))
-    print(dropped_nodes)        
+            drop_nodes.append(manager.IndexToNode(node))
+    print(dropped_nodes)   
     # Display routes
     total_distance = 0
     total_load = 0
@@ -171,6 +176,24 @@ def print_solution(data, manager, routing, assignment):
         total_load += route_load
     print('Total Distance of all routes: {}m'.format(total_distance))
     print('Total Load of all routes: {}'.format(total_load))
+    print("*****************Result of Number of Nodes with Fill level >70% ****************************************")
+    node_greaterthan_70=[]
+    print("Total Number Of Demands:",len(data['demands']))               
+    for val in range(0,len(data['demands'])):
+        if(data['demands'][val] >= binSize*0.70 ):
+            node_greaterthan_70.append(val)
+            
+    print("Dropped Nodes are:", drop_nodes)       
+    for val in drop_nodes:
+        if (val in node_greaterthan_70 ):
+            drop_nodes_greater_than70.append(val)
+   
+
+    print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 
+    print("Total Number of Nodes With Fill level>70% :",len(node_greaterthan_70))
+    print("Total Number of Dropped Nodes With Fill level>70% :",len(drop_nodes_greater_than70))
+    print("Total Number of  Visited Nodes Nodes With Fill level>70% :",len(node_greaterthan_70)- len(drop_nodes_greater_than70))
+    print("***********************************************************")
 
 def main():
     """Solve the CVRP problem."""

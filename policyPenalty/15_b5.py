@@ -65,9 +65,9 @@ def create_data_model():
                                         318. ,  530.,   246.01 , 76.42 ,  0.  ],
                                  ])
 
-    data['demands'] =[0, 20, 12, 30, 48, 45, 39, 28, 45, 38, 16, 23, 10, 18, 21]
+    data['demands'] =[0, 20, 12, 30, 48, 45, 18, 28, 45, 38, 16, 23, 10, 18, 21]
     data['num_vehicles'] = 3
-    data['vehicle_capacities'] = [75,75, 75]
+    data['vehicle_capacities'] = [75,75,75]
 
     data['depot'] = 0
 
@@ -90,8 +90,8 @@ def create_data_model():
            mandatoryNodes.append(testy)
 
     print("Mandatory Nodes To Be Picked")
-    print(mandatoryNodes)
-    
+    print(sum(mandatoryNodes))
+
 
  
 

@@ -104,13 +104,10 @@ def create_data_model():
         else:
             mandatoryNodesById.append(key) 
 
-    #need to drop Id =0 which is the depot since itcan notbe included in AddDisjunction method
-    mandatoryNodesById.remove(0)
-
-
     print("Node id Which must be dropped",removedOtherNodes)                
     print("Mandatory Nodes By Id",mandatoryNodesById)
     print("Dropped Nodes", drop_nodes)
+    print("Number of Dropped Nodes",len(drop_nodes))
   
 
     for x in removedOtherNodes:

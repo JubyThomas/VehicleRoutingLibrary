@@ -21,6 +21,10 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 import random
 import numpy as np
+drop_nodes = []
+binSize=50 # we assume the bin size is 50 L for all our experiment
+bin_fill_level=0.70
+drop_nodes_greater_than70=[]
 # [END import]
 
 
@@ -310,6 +314,7 @@ def print_solution(data, manager, routing, assignment):
             continue
         if assignment.Value(routing.NextVar(node)) == node:
             dropped_nodes += ' {}'.format(manager.IndexToNode(node))            
+            drop_nodes.append(manager.IndexToNode(node))
     print(dropped_nodes)
     # Display routes
     total_distance = 0
@@ -336,6 +341,24 @@ def print_solution(data, manager, routing, assignment):
         total_load += route_load
     print('Total Distance of all routes: {}m'.format(total_distance))
     print('Total Load of all routes: {}'.format(total_load))
+    print("*****************Result of Number of Nodes with Fill level >70% ****************************************")
+    node_greaterthan_70=[]
+    print("Total Number Of Demands:",len(data['demands']))               
+    for val in range(0,len(data['demands'])):
+        if(data['demands'][val] >= binSize*0.70 ):
+            node_greaterthan_70.append(val)
+            
+    print("Dropped Nodes are:", drop_nodes)       
+    for val in drop_nodes:
+        if (val in node_greaterthan_70 ):
+            drop_nodes_greater_than70.append(val)
+   
+
+    print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 
+    print("Total Number of Nodes With Fill level>70% :",len(node_greaterthan_70))
+    print("Total Number of Dropped Nodes With Fill level>70% :",len(drop_nodes_greater_than70))
+    print("Total Number of  Visited Nodes Nodes With Fill level>70% :",len(node_greaterthan_70)- len(drop_nodes_greater_than70))
+    print("***********************************************************")
 
 def main():
     """Solve the CVRP problem."""
