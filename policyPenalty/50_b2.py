@@ -220,22 +220,26 @@ def create_data_model():
                          [356.0, 190.88, 141.4, 309.9, 256.22, 311.73, 472.82, 235.64, 246.68, 488.48, 161.52, 171.82, 20.59, 273.28, 375.07, 157.89, 280.88, 
                          76.69, 395.55, 58.31, 88.68, 138.92, 489.93, 402.18, 432.91, 147.73, 227.26, 501.53, 410.41, 230.24, 250.67, 303.18, 164.35, 125.67, 
                          405.66, 299.7, 34.21, 349.78, 368.71, 488.39, 462.16, 432.59, 155.88, 201.56, 79.76, 276.62, 385.25, 360.07, 535.23, 0.0],
-                         ])     
+                         ])    
                              
-                            
-
-
     #"""To form the the Demand"""
     # if count ==1:
     data['demands'] =[0, 40, 23, 47, 44, 23, 43, 19, 41, 21, 40, 39, 33, 12, 33, 12, 30, 36, 27, 27, 11, 26, 24, 24, 24, 
-                     23, 22, 18, 17, 40, 15, 17, 32, 40, 13, 10, 10, 29, 14, 28, 39, 34, 16,29, 23, 19, 20, 23, 17, 19]
-
+                     23, 22, 18, 17, 40, 15, 17, 32, 40, 13, 10, 10, 29, 14, 28, 39, 34, 16,29, 23, 19, 20, 23, 17, 19]   
+    global total_demand_per_day
+    total_demand_per_day=sum(data['demands'])
+    global number_of_nodes
+    number_of_nodes=len(data['demands'])
+    
     data['num_vehicles'] = 4
+    global number_of_routes_created
+    number_of_routes_created=data['num_vehicles']
+      
     data['vehicle_capacities'] = [200,200,200,200]
-
-
+    global effective_vehicle_capacity
+    effective_vehicle_capacity=sum(data['vehicle_capacities'])
+    
     data['depot'] = 0
-
     dictSort={}
 
     for val in range(len(data['demands'])):
@@ -326,12 +330,18 @@ def print_solution(data, manager, routing, assignment):
     for val in range(0,len(data['demands'])):
         if(data['demands'][val] >= binSize*0.70 ):
             node_greaterthan_70.append(val)
-            
-    
+                
     for val in dropped_nodes:
         if (val in node_greaterthan_70 ):
             drop_nodes_greater_than70.append(val)
    
+    print("Number Of nodes :",number_of_nodes) 
+    print("Number of Routes Created:",number_of_routes_created)
+    print("Number of Nodes Dropped:",len(drop_nodes))
+    print("Total Demand Per Day :",total_demand_per_day)
+    print("Unutilized Capacity :",effective_vehicle_capacity -total_load)
+    print("Effective Vehicle Capacity :",effective_vehicle_capacity)
+    print("\n")   
     print("Node id Which must be dropped",sorted(drop_nodes))                
     print("Mandatory Nodes By Id",mandatoryNodesById)
     print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 

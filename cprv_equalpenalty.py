@@ -6,16 +6,14 @@ from ortools.constraint_solver import routing_enums_pb2
 from ortools.constraint_solver import pywrapcp
 #import matplotlib.pyplot as plt
 
-
 coords=[]
-data={}
 dictSort={}
-data['demands']=[]
 drop_nodes = []
+mandatoryNodesById=[]
+mandatoryNodes=[]
 binSize=50 # we assume the bin size is 50 L for all our experiment
 bin_fill_level=0.70
 drop_nodes_greater_than70=[]
-
 
 """ Method To form co-ordinates for the cities"""
 def  createCityCordinates(noOfcities):
@@ -23,57 +21,48 @@ def  createCityCordinates(noOfcities):
         x = random.randint(0, 500)
         y = random.randint(0, 500)
         coords.append((int(x),int(y)) )
-    print("Co-ordinates of each locations :",coords)
+        #plt.scatter(x, y)
+    #plt.show()
+    print(coords)
     return coords
 
 """form co-ordinates for the depot some where far away"""
 def formCoOrdinatesForDepot():    
     depotCoOrdinates=np.array([int(random.randint(0,750)),int(random.randint(0, 750))])
-    print("Depot Co-cordinates :",depotCoOrdinates)
+    print(depotCoOrdinates)
     return depotCoOrdinates
 
 
 """To form the the Demand"""
-def createDemandForEachCity(noOfcities):      
-    x=[]
-    for i in  range (0,noOfcities):
-        x.append(random.randint(10,40)) # we select th
-    data['demands']=x
-    print("Demands at each locations :",data['demands'])
-    return data['demands']
 
 
-"""This method creates Distance Matrix for all the co-ordinates , euclidean distance are calculated between two points"""
-def createDistanceMatrix(noOfcities):
-    data['distance_matrix']=np.zeros((noOfcities,noOfcities)) 
-    for i in  range (0,noOfcities):
-        for j in range(0,noOfcities):
-            if (i==0 and j==0):
-                data['distance_matrix'][i][j]=0
-            else:
-                data['distance_matrix'][i][j]=np.round(math.dist(coords[i],coords[j]),2)  
-    np.set_printoptions(threshold=np.inf)
-    print("Distance Matrix :", data['distance_matrix'])
+def CreateDemandDictionarySorted(demandList):
+    for val in range(len(demandList)):
+        #print(val)
+        dictSort[val]=demandList[val]
+    #print(dictSort)
+    return dictSort
+
+    #return data['distance_matrix']
 
 
 def create_data_model(noOfcities,noOfVehicles,vehicleCapacity):
     data={}
-    
+
     coords=createCityCordinates(noOfcities)
 
     depotCordinate= formCoOrdinatesForDepot()
-  
+
     """Adding the Depot Cordinates as first element in the List Of All City Coordinates"""
     coords.insert(0,depotCordinate)
 
     """ Creating Demands For each city"""
-    demandlist=[]
-    
+    x=[]
     for i in  range (0,noOfcities):
-        demandlist.append(random.randint(0,50))
-    data['demands']=demandlist
-    print("Demands at each locations: ",data['demands'])
-
+        x.append(random.randint(0,50))
+    data['demands']=x
+    print(data['demands'])
+    CreateDemandDictionarySorted(x)
 
     """Call Function To Create Distance Matrix"""
     data['distance_matrix']=np.zeros((noOfcities,noOfcities)) 
@@ -83,9 +72,12 @@ def create_data_model(noOfcities,noOfVehicles,vehicleCapacity):
                 data['distance_matrix'][i][j]=0
             else:
                 data['distance_matrix'][i][j]=np.round(math.dist(coords[i],coords[j]),2)  
+    np.set_printoptions(threshold=np.inf)
     print(data['distance_matrix'])
 
-
+    y= sorted(data["demands"],reverse=True)
+    print(y)
+    
     data['num_vehicles'] = noOfVehicles
     
     data['vehicle_capacities']=np.zeros((noOfVehicles)) 
@@ -93,7 +85,9 @@ def create_data_model(noOfcities,noOfVehicles,vehicleCapacity):
          data['vehicle_capacities'][val] =  vehicleCapacity
    
     print("Number Of Vehicles:", data['num_vehicles'])  
-    print("Vehicle Capacity of each vehicle:", data['vehicle_capacities'])       
+    print("Vehicle Capacity of each vehicle:", data['vehicle_capacities'])     
+
+
     data['depot'] = 0
     return data
 
@@ -104,14 +98,13 @@ def print_solution(data, manager, routing, assignment):
     # Display dropped nodes.
     dropped_nodes = "Dropped nodes"
     for node in range(routing.Size()):
-        
+
         if routing.IsStart(node) or routing.IsEnd(node):
             continue
         if assignment.Value(routing.NextVar(node)) == node:
             dropped_nodes += ' {}'.format(manager.IndexToNode(node))
-    print("Dropped Nodes are :",dropped_nodes)
-
-    
+            drop_nodes.append(manager.IndexToNode(node))
+    print(dropped_nodes)
     # Display routes
     total_distance = 0
     total_load = 0
@@ -155,7 +148,6 @@ def print_solution(data, manager, routing, assignment):
     print("Total Number of Dropped Nodes With Fill level>70% :",len(drop_nodes_greater_than70))
     print("Total Number of  Visited Nodes Nodes With Fill level>70% :",len(node_greaterthan_70)- len(drop_nodes_greater_than70))
     print("***********************************************************")
-
 
 def main():
     """Solve the CVRP problem."""

@@ -1,229 +1,227 @@
-"""
-demand_15_a1=  [0, 40, 12, 25, 19, 32, 38, 15, 34, 32, 16, 28, 18, 34, 12]
-bin_size=50
+import random
+import math
+import sys
+import numpy as np
+from ortools.constraint_solver import routing_enums_pb2
+from ortools.constraint_solver import pywrapcp
+#import matplotlib.pyplot as plt
+
+
+coords=[]
+data={}
+dictSort={}
+data['demands']=[]
+drop_nodes = []
+binSize=50 # we assume the bin size is 50 L for all our experiment
 bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 15_a1 or 15_b1")
-print(len(demand_15_a1))               
-print(sum(demand_15_a1))
-print(sum(demand_15_a1)*bin_fill_level)
-for val in range(0,len(demand_15_a1)):
-    if(demand_15_a1[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)        """
+drop_nodes_greater_than70=[]
+
+
+""" Method To form co-ordinates for the cities"""
+def  createCityCordinates(noOfcities):
+    for i in range(0,noOfcities):
+        x = random.randint(0, 500)
+        y = random.randint(0, 500)
+        coords.append((int(x),int(y)) )
+    print("Co-ordinates of each locations :",coords)
+    return coords
+
+"""form co-ordinates for the depot some where far away"""
+def formCoOrdinatesForDepot():    
+    depotCoOrdinates=np.array([int(random.randint(0,750)),int(random.randint(0, 750))])
+    print("Depot Co-cordinates :",depotCoOrdinates)
+    return depotCoOrdinates
+
+
+"""To form the the Demand"""
+def createDemandForEachCity(noOfcities):      
+    x=[]
+    for i in  range (0,noOfcities):
+        x.append(random.randint(10,40)) # we select th
+    data['demands']=x
+    print("Demands at each locations :",data['demands'])
+    return data['demands']
+
+
+"""This method creates Distance Matrix for all the co-ordinates , euclidean distance are calculated between two points"""
+def createDistanceMatrix(noOfcities):
+    data['distance_matrix']=np.zeros((noOfcities,noOfcities)) 
+    for i in  range (0,noOfcities):
+        for j in range(0,noOfcities):
+            if (i==0 and j==0):
+                data['distance_matrix'][i][j]=0
+            else:
+                data['distance_matrix'][i][j]=np.round(math.dist(coords[i],coords[j]),2)  
+    np.set_printoptions(threshold=np.inf)
+    print("Distance Matrix :", data['distance_matrix'])
+
+
+def create_data_model(noOfcities,noOfVehicles,vehicleCapacity):
+    data={}
+    
+    coords=createCityCordinates(noOfcities)
+
+    depotCordinate= formCoOrdinatesForDepot()
+  
+    """Adding the Depot Cordinates as first element in the List Of All City Coordinates"""
+    coords.insert(0,depotCordinate)
+
+    """ Creating Demands For each city"""
+    demandlist=[]
+    
+    for i in  range (0,noOfcities):
+        demandlist.append(random.randint(0,50))
+    data['demands']=demandlist
+    print("Demands at each locations: ",data['demands'])
+
+
+    """Call Function To Create Distance Matrix"""
+    data['distance_matrix']=np.zeros((noOfcities,noOfcities)) 
+    for i in  range (0,noOfcities):
+        for j in range(0,noOfcities):
+            if (i==0 and j==0):
+                data['distance_matrix'][i][j]=0
+            else:
+                data['distance_matrix'][i][j]=np.round(math.dist(coords[i],coords[j]),2)  
+    print(data['distance_matrix'])
+
+
+    data['num_vehicles'] = noOfVehicles
+    
+    data['vehicle_capacities']=np.zeros((noOfVehicles)) 
+    for val in range(0,noOfVehicles):
+         data['vehicle_capacities'][val] =  vehicleCapacity
+   
+    print("Number Of Vehicles:", data['num_vehicles'])  
+    print("Vehicle Capacity of each vehicle:", data['vehicle_capacities'])       
+    data['depot'] = 0
+    return data
+
+
+def print_solution(data, manager, routing, assignment):
+    """Prints assignment on console."""
+    print(f'Objective: {assignment.ObjectiveValue()}')
+    # Display dropped nodes.
+    dropped_nodes = "Dropped nodes"
+    for node in range(routing.Size()):
         
-print("********************************")
+        if routing.IsStart(node) or routing.IsEnd(node):
+            continue
+        if assignment.Value(routing.NextVar(node)) == node:
+            dropped_nodes += ' {}'.format(manager.IndexToNode(node))
+    print("Dropped Nodes are :",dropped_nodes)
 
-"""
-demand_15_a2=  [0, 17, 13, 19, 38, 40, 22, 11, 28, 37, 20, 10, 14, 33, 35]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 15_a2 or 15_b2")
-print(len(demand_15_a2))               
-print(sum(demand_15_a2))
-print(sum(demand_15_a2)*bin_fill_level)
-for val in range(0,len(demand_15_a2)):
-    if(demand_15_a2[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)    """
+    
+    # Display routes
+    total_distance = 0
+    total_load = 0
+    for vehicle_id in range(data['num_vehicles']):
+        index = routing.Start(vehicle_id)
+        plan_output = 'Route for vehicle {}:\n'.format(vehicle_id)
+        route_distance = 0
+        route_load = 0
+        while not routing.IsEnd(index):
+            node_index = manager.IndexToNode(index)
+            route_load += data['demands'][node_index]
+            plan_output += ' {0} Load({1}) -> '.format(node_index, route_load)
+            previous_index = index
+            index = assignment.Value(routing.NextVar(index))
+            route_distance += routing.GetArcCostForVehicle(
+                previous_index, index, vehicle_id)
+        plan_output += ' {0} Load({1})\n'.format(manager.IndexToNode(index),
+                                                 route_load)
+        plan_output += 'Distance of the route: {}m\n'.format(route_distance)
+        plan_output += 'Load of the route: {}\n'.format(route_load)
+        print(plan_output)
+        total_distance += route_distance
+        total_load += route_load
+    print('Total Distance of all routes: {}m'.format(total_distance))
+    print('Total Load of all routes: {}'.format(total_load))
+    print("*****************Result of Number of Nodes with Fill level >70% ****************************************")
+    node_greaterthan_70=[]
+    print("Total Number Of Demands:",len(data['demands']))               
+    for val in range(0,len(data['demands'])):
+        if(data['demands'][val] >= binSize*0.70 ):
+            node_greaterthan_70.append(val)
+            
+    print("Dropped Nodes are:", drop_nodes)       
+    for val in drop_nodes:
+        if (val in node_greaterthan_70 ):
+            drop_nodes_greater_than70.append(val)
+   
 
-print("********************************")     
-"""       
-demand_15_a3=  [0, 15, 10, 12, 38, 32, 38, 27, 34, 25, 33, 23, 19, 37, 17]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 15_a3 or 15_b3")
-print(len(demand_15_a3))               
-print(sum(demand_15_a3))
-print(sum(demand_15_a3)*bin_fill_level)
-for val in range(0,len(demand_15_a3)):
-    if(demand_15_a3[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)    """
-print("********************************")    
-"""
-demand_15_a4= [0, 37, 32, 29, 28, 28, 26, 21, 14, 12, 10, 39, 27,15, 12]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 15_a4 or 15_b4")
-print(len(demand_15_a4))               
-print(sum(demand_15_a4))
-print(sum(demand_15_a4)*bin_fill_level)
-for val in range(0,len(demand_15_a4)):
-    if(demand_15_a4[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)    """   
-print("********************************")    
-"""demand_15_a5= [0, 20, 12, 30, 48, 45, 18, 28, 45, 38, 16, 23, 10, 18, 21]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 15_a5 or 15_b5")
-print(len(demand_15_a5))               
-print(sum(demand_15_a5))
-print(sum(demand_15_a5)*bin_fill_level)
-for val in range(0,len(demand_15_a5)):
-    if(demand_15_a5[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) """
-"""print("********************************")    
-demand_30_a1= [0, 40, 26, 12, 43, 40, 36, 12, 37, 24, 39, 11, 27, 18, 25, 14, 37, 10, 29, 18, 14, 29, 34, 29, 14, 40, 16, 4, 33, 21]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 30_a1 or 30_b1")
-print(sum(demand_30_a1))            
-for val in range(0,len(demand_30_a1)):
-    if(demand_30_a1[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) """
-
-"""732,[1, 4, 5, 6, 8, 10, 16, 25]"""
-print("********************************")    
-""" 
-demand_30_a2= [0, 23, 27, 22, 13, 18, 40, 31, 38, 26, 21, 18, 36, 31, 40, 34, 26, 29, 31, 38, 18, 21, 39, 34, 15, 19, 23, 40, 21, 27]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 30_a2 or 30_b2")
-print(sum(demand_30_a2))            
-for val in range(0,len(demand_30_a2)):
-    if(demand_30_a2[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) 
-
-799
-[6, 8, 12, 14, 19, 22, 27]
-"""
-"""
-print("********************************")    
-demand_30_a3=[0, 23, 19, 31, 40, 16, 36, 23, 12, 36, 18, 21, 10, 21, 18, 38, 21, 17, 29, 35, 31, 19, 18, 34, 14, 23, 10, 26, 35, 13]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 30_a3 or 30_b3")
-print(sum(demand_30_a3))            
-for val in range(0,len(demand_30_a3)):
-    if(demand_30_a3[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) 
-
-687
-[4, 6, 9, 15, 19, 28]"""
-
-"""print("********************************")    
-demand_30_a4=[0, 21, 17, 12, 33, 37, 21, 18, 40, 36, 29, 31, 39, 31, 36, 21, 17, 14, 17, 26, 34, 22, 19, 21, 29, 24, 36, 40, 20, 12]
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 30_a4 or 30_b4")
-print(sum(demand_30_a4))            
-for val in range(0,len(demand_30_a4)):
-    if(demand_30_a4[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) 
-
-Instance 30_a4 or 30_b4
-753
-[5, 8, 9, 12, 14, 26, 27]"""
-print("********************************") 
-"""   
-demand_30_a5=[0, 21, 28, 38, 40, 18, 36, 31, 30, 28, 21, 29, 31, 39, 30, 18,
-                      29, 34, 27, 21, 38, 36, 27, 28, 36, 40, 21, 14, 34, 33]   
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 30_a5 or 30_b5")
-print(sum(demand_30_a5))            
-for val in range(0,len(demand_30_a5)):
-    if(demand_30_a5[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)
-
-856
-[3, 4, 6, 13, 20, 21, 24, 25]
-"""
-"""
-demand_50_a1=[0, 43, 41, 45, 29, 39, 37, 37, 37, 37, 36, 36, 35, 33, 33, 31, 31, 30, 29,
-                         29, 28, 26, 25, 24, 23, 23, 22, 22, 22, 22, 21, 20, 16, 16, 15, 15, 15, 
-                         14, 12, 12, 10, 10, 8, 6, 5, 3, 27, 14, 30, 15]
-  
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 50_a1 or 50_b1")
-print(sum(demand_50_a1))            
-for val in range(0,len(demand_50_a1)):
-    if(demand_50_a1[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)
-"""
-
-"""
-demand_50_a2=[0, 40, 23, 47, 44, 23, 43, 19, 41, 21, 40, 39, 33, 12, 33, 12, 30, 36, 27, 27, 11, 26, 24, 24, 24, 
-              23, 22, 18, 17, 40, 15, 17, 32, 40, 13, 10, 10, 29, 14, 28, 39, 34, 16,29, 23, 19, 20, 23, 17, 19]
-  
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 50_a2 or 50_b2")
-print(sum(demand_50_a2))            
-for val in range(0,len(demand_50_a2)):
-    if(demand_50_a2[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70)   """
+    print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 
+    print("Total Number of Nodes With Fill level>70% :",len(node_greaterthan_70))
+    print("Total Number of Dropped Nodes With Fill level>70% :",len(drop_nodes_greater_than70))
+    print("Total Number of  Visited Nodes Nodes With Fill level>70% :",len(node_greaterthan_70)- len(drop_nodes_greater_than70))
+    print("***********************************************************")
 
 
-"""
-demand_50_a3=[0, 25, 38, 21, 34, 21, 18, 29, 29, 21, 39, 12, 40, 16, 17, 32, 34, 28, 19, 37, 13, 23, 33, 45, 42, 14, 36, 48, 24, 
-              37, 49, 22, 47, 48, 16, 37, 43, 38, 48, 21, 14, 28, 14, 48, 17, 10, 31, 42, 43, 20]
-  
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 50_a3 or 50_b3")
-print(sum(demand_50_a3))            
-for val in range(0,len(demand_50_a3)):
-    if(demand_50_a3[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) 
-print(len(node_greaterthan_70)) """
-#****************************************
+def main():
+    """Solve the CVRP problem."""
+    # Instantiate the data problem.
+    noOfcities = int(input("Enter total number of locations including the depot: ")) 
+    noOfVehicles = int(input("Enter total number of vehicles at the depot: ")) 
+    vechileCapacity = int(input("Enter vehicle capacity of each vehicle: ")) 
+    data = create_data_model(noOfcities,noOfVehicles,vechileCapacity)
 
-demand_50_a4=[0, 23, 39, 25, 18, 34, 6, 20, 28, 4, 42, 19, 33, 39, 39, 18, 24, 32, 18, 44, 12, 12, 33, 11, 19, 28, 30, 35, 38,17,
-                      45, 18, 36, 30, 29, 18, 24, 10, 37, 13, 15, 24, 42, 7, 21, 39, 19, 23, 25, 37]
-  
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 50_a4 or 50_b4")
-print(sum(demand_50_a4))            
-for val in range(0,len(demand_50_a4)):
-    if(demand_50_a4[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) 
-print(len(node_greaterthan_70))
+    # Create the routing index manager.
+    manager = pywrapcp.RoutingIndexManager(len(data['distance_matrix']),
+                                           data['num_vehicles'], data['depot'])
 
-1252
-[2, 10, 13, 14, 19, 27, 28, 30, 32, 38, 42, 45, 49] 
+    # Create Routing Model.
+    routing = pywrapcp.RoutingModel(manager)
 
 
-"""demand_50_a5=[0, 48, 15, 40, 38, 35, 13, 43, 28, 32,
-                      31, 30, 29, 26, 15, 25, 22, 25, 24, 22, 
-                      20, 18, 18, 17, 16, 16, 15, 13,40,17,28,39,
-                      13, 23, 12, 28, 26, 32, 40, 18, 19, 29, 31,14, 29,
-                      23, 32, 18, 21, 30]
-  
-bin_size=50
-bin_fill_level=0.70
-node_greaterthan_70=[]
-print("Instance 50_a4 or 50_b4")
-print(sum(demand_50_a5))            
-for val in range(0,len(demand_50_a5)):
-    if(demand_50_a5[val] >= bin_size*0.70 ):
-        node_greaterthan_70.append(val)
-print(node_greaterthan_70) 
-print(len(node_greaterthan_70)) """
+    # Create and register a transit callback.
+    def distance_callback(from_index, to_index):
+        """Returns the distance between the two nodes."""
+        # Convert from routing variable Index to distance matrix NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        to_node = manager.IndexToNode(to_index)
+        return data['distance_matrix'][from_node][to_node]
+
+    transit_callback_index = routing.RegisterTransitCallback(distance_callback)
+
+    # Define cost of each arc.
+    routing.SetArcCostEvaluatorOfAllVehicles(transit_callback_index)
+
+
+    # Add Capacity constraint.
+    def demand_callback(from_index):
+        """Returns the demand of the node."""
+        # Convert from routing variable Index to demands NodeIndex.
+        from_node = manager.IndexToNode(from_index)
+        return data['demands'][from_node]
+
+    demand_callback_index = routing.RegisterUnaryTransitCallback(
+        demand_callback)
+    routing.AddDimensionWithVehicleCapacity(
+        demand_callback_index,
+        0,  # null capacity slack
+        data['vehicle_capacities'],  # vehicle maximum capacities
+        True,  # start cumul to zero
+        'Capacity')
+    # Allow to drop nodes.
+    penalty = 10000
+    for node in range(1, len(data['distance_matrix'])):
+        routing.AddDisjunction([manager.NodeToIndex(node)], penalty)
+
+    # Setting first solution heuristic.
+    search_parameters = pywrapcp.DefaultRoutingSearchParameters()
+    search_parameters.first_solution_strategy = (
+        routing_enums_pb2.FirstSolutionStrategy.PATH_CHEAPEST_ARC)
+    search_parameters.local_search_metaheuristic = (
+        routing_enums_pb2.LocalSearchMetaheuristic.GUIDED_LOCAL_SEARCH)
+    search_parameters.time_limit.FromSeconds(1)
+
+    # Solve the problem.
+    assignment = routing.SolveWithParameters(search_parameters)
+
+    # Print solution on console.
+    if assignment:
+        print_solution(data, manager, routing, assignment)
+
+
+if __name__ == '__main__':
+    main()

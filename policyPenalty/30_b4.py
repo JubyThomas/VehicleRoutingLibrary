@@ -129,11 +129,20 @@ def create_data_model():
                                 ])
     
     data['demands'] =[0, 21, 17, 12, 33, 37, 21, 18, 40, 36, 29, 31, 39, 31, 36, 21, 17, 14, 17, 26, 34, 22, 19, 21, 29, 24, 36, 40, 20, 12]
-    
+    global total_demand_per_day
+    total_demand_per_day=sum(data['demands'])
+    global number_of_nodes
+    number_of_nodes=len(data['demands'])
 
  
     data['num_vehicles'] = 3
+    global number_of_routes_created
+    number_of_routes_created=data['num_vehicles']
+    
+    
     data['vehicle_capacities'] = [150,150, 150]
+    global effective_vehicle_capacity
+    effective_vehicle_capacity=sum(data['vehicle_capacities'])
 
     data['depot'] = 0
 
@@ -155,11 +164,7 @@ def create_data_model():
         if(temp<=sum(data['vehicle_capacities'])):
            mandatoryNodes.append(testy)
 
-    print("Mandatory Nodes To Be Picked")
-    print(mandatoryNodes)
-    
-
- 
+    print("Mandatory Nodes To Be Picked :", mandatoryNodes)
 
     # To remove dropped nodes from dictionary
     removedOtherNodes=[]
@@ -231,7 +236,15 @@ def print_solution(data, manager, routing, assignment):
     for val in dropped_nodes:
         if (val in node_greaterthan_70 ):
             drop_nodes_greater_than70.append(val)
-   
+            
+            
+    print("Number Of nodes :",number_of_nodes) 
+    print("Number of Routes Created:",number_of_routes_created)
+    print("Number of Nodes Dropped:",len(drop_nodes))
+    print("Total Demand Per Day :",total_demand_per_day)
+    print("Unutilized Capacity :",effective_vehicle_capacity -total_load)
+    print("Effective Vehicle Capacity :",effective_vehicle_capacity)
+    print("\n")   
     print("Node id Which must be dropped",sorted(drop_nodes))                
     print("Mandatory Nodes By Id",mandatoryNodesById)
     print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 

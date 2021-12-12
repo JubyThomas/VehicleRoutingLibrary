@@ -126,9 +126,19 @@ def create_data_model():
                                     ])
     
     data['demands'] =[0, 23, 27, 22, 13, 18, 40, 31, 38, 26, 21, 18, 36, 31, 40, 34, 26, 29, 31, 38, 18, 21, 39, 34, 15, 19, 23, 40, 21, 27]
+    global total_demand_per_day
+    total_demand_per_day=sum(data['demands'])
+    global number_of_nodes
+    number_of_nodes=len(data['demands'])
 
     data['num_vehicles'] = 3
+    global number_of_routes_created
+    number_of_routes_created=data['num_vehicles']
+    
     data['vehicle_capacities'] = [150,150, 150]
+    global effective_vehicle_capacity
+    effective_vehicle_capacity=sum(data['vehicle_capacities'])
+
 
 
     data['depot'] = 0
@@ -184,8 +194,14 @@ def print_solution(data, manager, routing, assignment):
     for val in drop_nodes:
         if (val in node_greaterthan_70 ):
             drop_nodes_greater_than70.append(val)
-   
-
+    
+    print("Number Of nodes :",number_of_nodes) 
+    print("Number of Routes Created:",number_of_routes_created)
+    print("Number of Nodes Dropped:",len(drop_nodes))
+    print("Total Demand Per Day :",total_demand_per_day)
+    print("Unutilized Capacity :",effective_vehicle_capacity -total_load)
+    print("Effective Vehicle Capacity :",effective_vehicle_capacity)
+    print("\n") 
     print("Nodes With fill Level greater than 70% :",node_greaterthan_70) 
     print("Total Number of Nodes With Fill level>70% :",len(node_greaterthan_70))
     print("Total Number of Dropped Nodes With Fill level>70% :",len(drop_nodes_greater_than70))
